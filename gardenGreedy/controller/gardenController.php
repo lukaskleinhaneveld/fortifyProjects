@@ -2,22 +2,34 @@
 
 require(ROOT."model/gardenModel.php");
 
-function index($message = ''){
-
-	render("garden/index", array(
-		'message' => $message
-	));
+function index(){
+	if($_SESSION['LoggedIn'] == 1){
+		render("garden/index");
+	}else{
+		render("garden/login");
+	}
 }
 
 function login(){
-
-    //loginUser($Email, $Password);
 
     render("garden/login");
 }
 
 function logout(){
+	if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    if (isset($_POST['Yes'])) {
+		session_unset($_SESSION['LoggedIn']);
+		$message = "Logged out";
+		header('Location: '.URL.'garden/index');
+		$_SESSION['message'] = $message;
+    } else {
+		header('Location: '.URL.'garden/index');
+    }
+}
+
+
+	render("garden/logout");
 }
 
 function register(){
@@ -35,12 +47,11 @@ function registerProcess(){
 
 		registerUser($Firstname, $Password, $Email, $Password);
 	}else{
-        echo "The form method has been set incorrectly!";
+        $message = "The form method has been set incorrectly!";
+		$_SESSION['message'] = $message;
     }
 
-    render("garden/index", array(
-        'message' => "You have successfully been registered!"
-    ));
+    render("garden/register");
 }
 
 function forgottenModdel(){

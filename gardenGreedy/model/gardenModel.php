@@ -1,32 +1,50 @@
 <?php
 
-function loginUser($Email, $Password){
+function loginUser(){
     $db = openDatabaseConnection();
 
-    $Password = $_POST['Password'];
+    $Password = md5(sha1($_POST['Password']));
     $Email = $_POST['Email'];
 
-    $sql = "SELECT * FROM register WHERE Email=:Email";
+    $sql = "SELECT * FROM users WHERE Email=:Email";
     $query = $db->prepare($sql);
     $query->execute(array(
         ':Email' => $Email
     ));
     $users = $query->fetch();
 
-
     if($users != null){
-        if($Password == $users['Password']){
-            echo "Success!";
+        if($Password == $users['Password'] && $Email == $users['Email']){
+            $message = "Success!";
+            $_SESSION['LoggedIn'] = 1;
+
+            $sql = "SELECT Firstname, Lastname FROM users WHERE Email=:Email";
+            $query = $db->prepare($sql);
+            $query->execute(array(
+                ':Email' => $Email
+            ));
+            $users = $query->fetch();
+
+            $Firstname = $users['Firstname'];
+            $Lastname = $users['Lastname'];
+
+            $_SESSION['Firstname'] = $Firstname;
+            $_SESSION['Lastname'] = $Lastname;
+
+            header('Location :' .URL. 'garden/index');
+                $_SESSION['message'] = $message;
         }else{
-        echo "This password does not exist. Please try again.";
+            $message = "This password does not exist. Please try again.";
+                $_SESSION['message'] = $message;
         }
     }else{
-        echo "This email does not exist. Please try again or register.";
+        $message = "This email does not exist. Please try again or register.";
+            $_SESSION['message'] = $message;
     }
 
     $db = null;
 
-    return $query->fetchAll();
+    $_SESSION['message'] = $message;
 }
 
 function logoutUser(){
@@ -46,21 +64,33 @@ function registerUser($Firstname, $Password, $Email, $Password){
 		return "Niet alle velden zijn correct ingevuld";
 	}
 
-
-    $sql = "INSERT INTO users (Firstname, Lastname, Password, Email, Active) VALUES (:Firstname, :Lastname, :Password, :Email, :Active)";
+    $sql = "SELECT * FROM users WHERE Email=:Email";
     $query = $db->prepare($sql);
-
-    $Password = password_hash($Password, PASSWORD_BCRYPT);
-
     $query->execute(array(
-        ':Firstname' => $Firstname,
-        ':Lastname' => $Lastname,
-        ':Email' => $Email,
-        ':Password' => $Password,
-        ':Active' => $Active
+        ':Email' => $Email
     ));
+    $count = $query->rowCount();
+
+    if($count == 0){
+        $sql = "INSERT INTO users (Firstname, Lastname, Password, Email, Active) VALUES (:Firstname, :Lastname, :Password, :Email, :Active)";
+        $query = $db->prepare($sql);
+        $Password = md5(sha1($Password));
+        $query->execute(array(
+            ':Firstname' => $Firstname,
+            ':Lastname' => $Lastname,
+            ':Email' => $Email,
+            ':Password' => $Password,
+            ':Active' => $Active
+        ));
+
+        $message = "You have successfully been registered!";
+    }else{
+        $message = "This email already exist. Please enter a different email adress.";
+    }
 
     $db = null;
+
+    $_SESSION['message'] = $message;
 }
 
 function forgotPassword(){
